@@ -1,3 +1,7 @@
+
+import controlP5.*;
+ControlP5 cp5;
+
 int r = 25;
 int dx = 100;
 int dy = 100;
@@ -78,6 +82,17 @@ void circ(int i, int j) {
 
 void setup() {
   size(1280, 960);  // Size must be the first statement
+  
+  cp5 = new ControlP5(this);
+  cp5.addSlider("r")
+     .setPosition(40, 40)
+     .setSize(200, 20)
+     .setRange(0, 100)
+     .setValue(25)
+     .setColorCaptionLabel(color(20,20,20));
+}
+
+void draw() { 
   ellipseMode(RADIUS);
   background(255);
   stroke(0);
@@ -91,16 +106,5 @@ void setup() {
       lattice(cx, cy);
     }
   }
- 
+  //noLoop();
 }
-
-/*
-void draw() { 
-  background(0);   // Clear the screen with a black background
-  y = y - 1; 
-  if (y < 0) { 
-    y = height; 
-  } 
-  line(0, y, width, y);  
-} 
-*/
