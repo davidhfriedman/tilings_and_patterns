@@ -1,4 +1,4 @@
-int r = 50;
+int r = 25;
 int dx = 100;
 int dy = 100;
 
@@ -26,21 +26,16 @@ int[][] circles = {
   /* 5 */ {  dx/2,    dy }
 };
 
-void setup() {
-  size(1280, 960);  // Size must be the first statement
-  background(255);
-  stroke(0);
-  noFill();
-  //frameRate(30);
-  for(int x = r; x < width-r; x+=dx) {
-    for(int y = r; y < height-r; y+=dy) {
-       circle(x, y, r);  
-    }
-  }
-  
-  int cx = r + 5 * dx;
-  int cy = r + 5 * dy;
-  
+int iTOx (int i, int j) {
+  if (j%2 == 1) { return floor(i*dx + dx/2); }
+  else          { return floor(i*dx);        }   
+}
+
+int jTOy (int j) {
+  return floor(j*dy);
+}
+
+void lattice(int cx, int cy) {
   for(int i = 0; i < 12; i++) {
     int fx = floor(cx + r * cos(i * PI/6));
     int fy = floor(cy + r * sin(i * PI/6));
@@ -55,6 +50,31 @@ void setup() {
     line(fx, fy, tAx, tAy);
     line(fx, fy, tBx, tBy);
   }
+}
+  
+void setup() {
+  size(1280, 960);  // Size must be the first statement
+  ellipseMode(RADIUS);
+  background(255);
+  stroke(0);
+  noFill();
+  //frameRate(30);
+  for(int i = 1; i < 10; i++) {
+    for(int j = 1; j < 10; j++) { 
+      circle(iTOx(i,j), jTOy(j), r);
+    }
+  }
+  
+  int cx = iTOx(5, 5);
+  int cy = jTOy(5);
+  /*
+  strokeWeight(5);
+  point(cx, cy);
+  for(int i = 0; i < 12; i++) {
+     point(cx + r * cos(i * PI/6), cy + r * sin(i * PI/6));
+  }
+  */
+  lattice(cx, cy);
 }
 
 /*
