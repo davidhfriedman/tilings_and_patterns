@@ -1,6 +1,7 @@
 int r = 25;
 int dx = 100;
 int dy = 100;
+boolean wide = true;
 
 int[][] table = {
   /*  0 */ { 0, 6,   5, 6  },
@@ -47,8 +48,19 @@ void lattice(int cx, int cy) {
     int tAy = floor(cy + circles[cA][1] - r * sin(pA * PI/6));
     int tBx = floor(cx + circles[cB][0] + r * cos(pB * PI/6));
     int tBy = floor(cy + circles[cB][1] - r * sin(pB * PI/6));
-    line(fx, fy, tAx, tAy);
-    line(fx, fy, tBx, tBy);
+    if (wide) {
+      stroke(0);
+      strokeWeight(5);
+      line(fx, fy, tAx, tAy);
+      line(fx, fy, tBx, tBy);
+      stroke(255);
+      strokeWeight(4);
+      line(fx, fy, tAx, tAy);
+      line(fx, fy, tBx, tBy);
+    } else {
+      line(fx, fy, tAx, tAy);
+      line(fx, fy, tBx, tBy);
+    }
   }
 }
 
