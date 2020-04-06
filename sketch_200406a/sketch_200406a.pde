@@ -18,40 +18,52 @@ int[][] table = {
 };
 
 int[][] circles = {
-  /* 0 */ {  dx/2,   -dy },
-  /* 1 */ {     0, -2*dy },
-  /* 2 */ { -dx/2,   -dy },
-  /* 3 */ { -dx/2,    dy },
-  /* 4 */ {     0,  2*dy },
-  /* 5 */ {  dx/2,    dy }
+  /* 0 */ {    dx, -dy/2 },
+  /* 1 */ {     0,   -dy },
+  /* 2 */ {   -dx, -dy/2 },
+  /* 3 */ {   -dx,  dy/2 },
+  /* 4 */ {     0,    dy },
+  /* 5 */ {    dx,  dy/2 }
 };
 
-int iTOx (int i, int j) {
-  if (j%2 == 1) { return floor(i*dx + dx/2); }
-  else          { return floor(i*dx);        }   
+int jTOy (int i, int j) {
+  if (i%2 == 1) { return floor(j*dy + dy/2); }
+  else          { return floor(j*dy);        }   
 }
 
-int jTOy (int j) {
-  return floor(j*dy);
+int iTOx (int i) {
+  return floor(i*dx);
 }
 
 void lattice(int cx, int cy) {
   for(int i = 0; i < 12; i++) {
     int fx = floor(cx + r * cos(i * PI/6));
-    int fy = floor(cy + r * sin(i * PI/6));
+    int fy = floor(cy - r * sin(i * PI/6));
     int cA = table[i][0];
     int pA = table[i][1];
     int cB = table[i][2];
     int pB = table[i][3];
     int tAx = floor(cx + circles[cA][0] + r * cos(pA * PI/6));
-    int tAy = floor(cy + circles[cA][1] + r * sin(pA * PI/6));
+    int tAy = floor(cy + circles[cA][1] - r * sin(pA * PI/6));
     int tBx = floor(cx + circles[cB][0] + r * cos(pB * PI/6));
-    int tBy = floor(cy + circles[cB][1] + r * sin(pB * PI/6));
+    int tBy = floor(cy + circles[cB][1] - r * sin(pB * PI/6));
     line(fx, fy, tAx, tAy);
     line(fx, fy, tBx, tBy);
   }
 }
-  
+
+void circ(int i, int j) {
+  int cx = iTOx(i);
+  int cy = jTOy(i,j);
+  circle(cx, cy, r);
+  strokeWeight(5);
+  point(cx, cy);
+  for(int k = 0; k < 12; k++) {
+     point(cx + r * cos(k * PI/6), cy + r * sin(k * PI/6));
+  }
+  strokeWeight(1);
+}
+
 void setup() {
   size(1280, 960);  // Size must be the first statement
   ellipseMode(RADIUS);
@@ -61,20 +73,13 @@ void setup() {
   //frameRate(30);
   for(int i = 1; i < 10; i++) {
     for(int j = 1; j < 10; j++) { 
-      circle(iTOx(i,j), jTOy(j), r);
+      //circ(i, j);
+      int cx = iTOx(i);
+      int cy = jTOy(i, j);
+      lattice(cx, cy);
     }
   }
-  
-  int cx = iTOx(5, 5);
-  int cy = jTOy(5);
-  /*
-  strokeWeight(5);
-  point(cx, cy);
-  for(int i = 0; i < 12; i++) {
-     point(cx + r * cos(i * PI/6), cy + r * sin(i * PI/6));
-  }
-  */
-  lattice(cx, cy);
+ 
 }
 
 /*
