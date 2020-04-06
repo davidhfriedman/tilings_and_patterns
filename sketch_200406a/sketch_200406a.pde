@@ -62,6 +62,8 @@ void lattice(int cx, int cy) {
       line(fx, fy, tAx, tAy);
       line(fx, fy, tBx, tBy);
     } else {
+      stroke(0);
+      strokeWeight(1);
       line(fx, fy, tAx, tAy);
       line(fx, fy, tBx, tBy);
     }
@@ -89,6 +91,11 @@ void setup() {
      .setSize(200, 20)
      .setRange(0, 100)
      .setValue(25)
+     .setColorCaptionLabel(color(20,20,20));
+   cp5.addToggle("wide")
+     .setPosition(40,100)
+     .setSize(50,20)
+     .setValue(true)
      .setColorCaptionLabel(color(20,20,20));
 }
 
