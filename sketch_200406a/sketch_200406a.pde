@@ -6,6 +6,7 @@ int r = 25;
 int dx = 100;
 int dy = 100;
 boolean wide = true;
+// DEBUGGING int p = 0;
 
 int[][] table = {
   /*  0 */ { 0, 6,   5, 6  },
@@ -22,13 +23,13 @@ int[][] table = {
   /* 11 */ { 4, 1,   0, 9  }
 };
 
-int[][] circles = {
-  /* 0 */ {    dx, -dy/2 },
-  /* 1 */ {     0,   -dy },
-  /* 2 */ {   -dx, -dy/2 },
-  /* 3 */ {   -dx,  dy/2 },
-  /* 4 */ {     0,    dy },
-  /* 5 */ {    dx,  dy/2 }
+float[][] circles = {
+  /* 0 */ /* {    dx, -dy/2 }, */ {  1, -0.5 },
+  /* 1 */ /* {     0,   -dy }, */ {  0,   -1 },
+  /* 2 */ /* {   -dx, -dy/2 }, */ { -1, -0.5 },
+  /* 3 */ /* {   -dx,  dy/2 }, */ { -1,  0.5 },
+  /* 4 */ /* {     0,    dy }, */ {  0,    1 },
+  /* 5 */ /* {    dx,  dy/2 }  */ {  1,  0.5 }
 };
 
 int jTOy (int i, int j) {
@@ -41,17 +42,18 @@ int iTOx (int i) {
 }
 
 void lattice(int cx, int cy) {
-  for(int i = 0; i < 12; i++) {
+  // DEBUGGING for(int i = p; i < p+1; i++) {
+  for(int i = 0; i < 11; i++) {
     int fx = floor(cx + r * cos(i * PI/6));
     int fy = floor(cy - r * sin(i * PI/6));
     int cA = table[i][0];
     int pA = table[i][1];
     int cB = table[i][2];
     int pB = table[i][3];
-    int tAx = floor(cx + circles[cA][0] + r * cos(pA * PI/6));
-    int tAy = floor(cy + circles[cA][1] - r * sin(pA * PI/6));
-    int tBx = floor(cx + circles[cB][0] + r * cos(pB * PI/6));
-    int tBy = floor(cy + circles[cB][1] - r * sin(pB * PI/6));
+    int tAx = floor(cx + circles[cA][0]*dx + r * cos(pA * PI/6));
+    int tAy = floor(cy + circles[cA][1]*dy - r * sin(pA * PI/6));
+    int tBx = floor(cx + circles[cB][0]*dx + r * cos(pB * PI/6));
+    int tBy = floor(cy + circles[cB][1]*dy - r * sin(pB * PI/6));
     if (wide) {
       stroke(0);
       strokeWeight(5);
@@ -73,13 +75,13 @@ void lattice(int cx, int cy) {
 void circ(int i, int j) {
   int cx = iTOx(i);
   int cy = jTOy(i,j);
-  circle(cx, cy, r);
-  strokeWeight(5);
+  stroke(0);
+  //strokeWeight(5);
+  /* Can omit this for debugging */ circle(cx, cy, r);
   point(cx, cy);
   for(int k = 0; k < 12; k++) {
      point(cx + r * cos(k * PI/6), cy + r * sin(k * PI/6));
   }
-  strokeWeight(1);
 }
 
 void setup() {
@@ -92,11 +94,37 @@ void setup() {
      .setRange(0, 100)
      .setValue(25)
      .setColorCaptionLabel(color(20,20,20));
+  cp5.addSlider("dx")
+     .setPosition(40, 100)
+     .setSize(200, 20)
+     .setRange(0, 200)
+     .setValue(100)
+     .setColorCaptionLabel(color(20,20,20));
+  cp5.addSlider("dy")
+     .setPosition(40, 160)
+     .setSize(20, 150)
+     .setRange(0, 200)
+     .setValue(100)
+     .setColorCaptionLabel(color(20,20,20));
    cp5.addToggle("wide")
-     .setPosition(40,100)
+     .setPosition(80,180)
      .setSize(50,20)
      .setValue(true)
      .setColorCaptionLabel(color(20,20,20));
+    /* debugging: draw only one pair of connection lines selectable by knob
+    cp5.addKnob("p")
+     .setRange(0,11)
+     .setValue(0)
+     .setPosition(40,250)
+     .setRadius(25)
+     .setNumberOfTickMarks(12)
+     .setTickMarkLength(4)
+     .snapToTickMarks(true)
+     .setColorForeground(color(255))
+     .setColorBackground(color(20,20,190)) // color(0, 160, 100))
+     .setColorActive(color(255,255,0))
+     .setDragDirection(Knob.VERTICAL);
+    */
 }
 
 void draw() { 
