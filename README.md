@@ -1,6 +1,6 @@
 # Islamic Tiling Exercise
 
-[Islamic Tiling Exercise](tiling.png)
+![Islamic Tiling Exercise](tiling.png)
 
 An exercise in making Islamic tiling patterns. Inspired by a recent viewing of the video "Building the Moroccan Court" ([on YouTube](https://www.youtube.com/watch?v=Og6cTlwBTrk)).  I learned this pattern from A. K. Dewdney's Computer Recreations in *Scientific American* v. 258 no. 6 (June 1988) pp.120-123. He teaches the technique of designing the pattern around circles. I'd forgotten all the details and had to work it out again. [notebook](Islamic Geometric Patterns.pdf)
 
