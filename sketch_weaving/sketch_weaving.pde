@@ -49,13 +49,23 @@ boolean feq(float f, float g) {
 }
 
 class MaybePVector {
+  boolean onsegs;
   boolean just;
   PVector p;
-  MaybePVector(boolean _j, PVector _p) {
+  MaybePVector(boolean _j, PVector _p, boolean _o) {
     just = _j;
+    onsegs = _o;
     if (just) {
       p = _p;
     }
+  }
+}
+
+boolean inRange(float a, float b, float x) {
+  if (a < b) {
+    return a <= x && x <= b;
+  } else {
+    return b <= x && x <= a;
   }
 }
 
@@ -88,12 +98,17 @@ MaybePVector intersect(Segment s1, Segment s2) {
   float m2 = (s2.b.y - s2.a.y) / (s2.b.x - s2.a.x);
   float b2 = s2.a.y - m2 * s2.a.x;
   if (feq(m1, m2)) {
-    return new MaybePVector(false, null);
+    return new MaybePVector(false, null, false);
   } else {
     float x = (b2 - b1)/(m1 - m2);
     float y = m1 * x + b1;
+    // make sure it is on the segments
+    boolean onsegs = inRange(s1.a.x, s1.b.x, x)
+                  && inRange(s1.a.y, s1.b.y, y)
+                  && inRange(s2.a.x, s2.b.x, x)
+                  && inRange(s2.a.y, s2.b.y, y);
     PVector i = new PVector(x, y);
-    return new MaybePVector(true, i);
+    return new MaybePVector(true, i, onsegs);
   }
 }
 
@@ -105,7 +120,11 @@ void weave() {
       }
       MaybePVector mp = intersect(s1, s2);
       if (mp.just) {
-         fill(color(255, 0, 0));
+         if (mp.onsegs) {
+           fill(color(255, 0, 0));
+         } else {
+           fill(color(0, 255, 255));
+         }
          circle(mp.p.x, mp.p.y, 5);
       }
     }
