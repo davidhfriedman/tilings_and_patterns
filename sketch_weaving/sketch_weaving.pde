@@ -10,6 +10,11 @@ class Segment {
     noFill();
     line(a.x, a.y, b.x, b.y);
   }
+  String toString() {
+    String s = "<Segment (" + a.x + "," + a.y +") (" + b.x + "," + b.y +") [" + intersections + "]";
+    //for(int i: intersections+ "]>";
+    return s;
+  }
   PVector a;
   PVector b;
   IntList intersections;
@@ -32,9 +37,12 @@ final int UNDER = 2;
 class Intersection {
   PVector p;
   int parity;
-  Intersection(PVector _p, int _parity) {
+  int s1, s2;
+  Intersection(PVector _p, int _parity, int _s1, int _s2) {
     p = _p;
     parity = _parity;
+    s1 = _s1;
+    s2 = _s2;
   }
 }
 
@@ -127,8 +135,9 @@ MaybePVector intersect(Segment s1, Segment s2) {
   }
 }
 
-void addIntersectionToSegment(Segment s, int i) {
-  s.intersections.append(i);
+void addIntersectionToSegments(Segment s1, Segment s2, int i) {
+  s1.intersections.append(i);
+  s2.intersections.append(i);
 }
 
 boolean veq (PVector a, PVector b) {
@@ -148,23 +157,44 @@ void weave() {
       MaybePVector mp = intersect(s1, s2);
       if (mp.just && mp.onsegs) {
         println("Adding intersection", mp.p.x, mp.p.y);
-        intersections.add(new Intersection(mp.p, NA));
+        intersections.add(new Intersection(mp.p, NA, i, j));
         int I = intersections.size()-1;
-        addIntersectionToSegment(s1, I);
-        addIntersectionToSegment(s2, I);
+        addIntersectionToSegments(s1, s2, I);
       }
     }
   }
-  // choose a segment and mark the first intersection "over" (arbitrary: if under, the pattern would be the same "reversed")
-  for(Segment s: segments) {
-    println(s);
-    if (s.intersections.size() > 0) {
-      println(s.intersections, s.intersections.get(0), intersections.get(s.intersections.get(0)).parity); 
-      intersections.get(s.intersections.get(0)).parity = OVER;
-      println(s.intersections, s.intersections.get(0), intersections.get(s.intersections.get(0)).parity); 
-      break;
+  
+  // put all the Segments with any intersections on a list
+  IntList segmentsToDo = new IntList();
+  for(int i = 0; i < segments.size(); i++) {
+    print(segments.get(i));
+    if (segments.get(i).intersections.size() > 0) {
+      segmentsToDo.append(i);
+      println(" - ADDING");
+    } else {
+      println(" - Skipping");
     }
   }
+
+  println("segments to do: ", segments);
+  
+  for(int i = 0; i < segmentsToDo.size(); i++) {
+    stroke(80);
+    strokeWeight(3);
+    line(segments.get(i).a.x, segments.get(i).a.y, segments.get(i).b.x, segments.get(i).b.y);
+  }
+  
+  /*
+  int parity = OVER;
+  while (segmentsToDo.size() > 0) {
+    int s = segmentsToDo.remove(segmentsToDo.size()-1);
+    for(int i = 0; i < segments.get(s).intersections.size(); i++) {
+      intersections.get(segments.get(s).intersections.get(i)).parity = parity;
+      parity = parity == OVER ? UNDER : OVER;
+    }
+    break;
+  }
+  */
   
   for(Intersection i: intersections) {
     println(i, i.p.x, i.p.y, i.parity);
