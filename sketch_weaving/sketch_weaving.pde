@@ -2,6 +2,7 @@ class Segment {
   Segment(PVector _a, PVector _b) {
     a = _a;
     b = _b;
+    intersections = new IntList();
   }
   void display() {
     stroke(0);
@@ -11,6 +12,7 @@ class Segment {
   }
   PVector a;
   PVector b;
+  IntList intersections;
 };
 
 void displaySegments() {
@@ -23,7 +25,20 @@ void displaySegments() {
 ArrayList<Segment> segments = new ArrayList<Segment>();
 int sX, sY, eX, eY;
 
-ArrayList<PVector> intersections = new ArrayList<PVector>();
+final int NA = 0;
+final int OVER = 1;
+final int UNDER = 2;
+
+class Intersection {
+  PVector p;
+  int parity;
+  Intersection(PVector _p, int _parity) {
+    p = _p;
+    parity = _parity;
+  }
+}
+
+ArrayList<Intersection> intersections = new ArrayList<Intersection>();
 
 void setup() {
   size(640, 360);
@@ -112,22 +127,57 @@ MaybePVector intersect(Segment s1, Segment s2) {
   }
 }
 
+void addIntersectionToSegment(Segment s, int i) {
+  s.intersections.append(i);
+}
+
+boolean veq (PVector a, PVector b) {
+  return feq(a.x, b.x) && feq(a.y, b.y);
+}
+
 void weave() {
-  for(Segment s1: segments) {
-    for(Segment s2: segments) {
-      if (s1.a == s2.a && s1.b == s2.b) {
-        continue;
-      }
+  intersections = new ArrayList<Intersection>();
+  for(Segment s: segments) {
+    s.intersections = new IntList();
+  }
+    
+  for(int i = 0; i < segments.size(); i++) {
+    for(int j = i+1; j < segments.size(); j++) {
+      Segment s1 = segments.get(i);
+      Segment s2 = segments.get(j);
       MaybePVector mp = intersect(s1, s2);
-      if (mp.just) {
-         if (mp.onsegs) {
-           fill(color(255, 0, 0));
-         } else {
-           fill(color(0, 255, 255));
-         }
-         circle(mp.p.x, mp.p.y, 5);
+      if (mp.just && mp.onsegs) {
+        println("Adding intersection", mp.p.x, mp.p.y);
+        intersections.add(new Intersection(mp.p, NA));
+        int I = intersections.size()-1;
+        addIntersectionToSegment(s1, I);
+        addIntersectionToSegment(s2, I);
       }
     }
+  }
+  // choose a segment and mark the first intersection "over" (arbitrary: if under, the pattern would be the same "reversed")
+  for(Segment s: segments) {
+    println(s);
+    if (s.intersections.size() > 0) {
+      println(s.intersections, s.intersections.get(0), intersections.get(s.intersections.get(0)).parity); 
+      intersections.get(s.intersections.get(0)).parity = OVER;
+      println(s.intersections, s.intersections.get(0), intersections.get(s.intersections.get(0)).parity); 
+      break;
+    }
+  }
+  
+  for(Intersection i: intersections) {
+    println(i, i.p.x, i.p.y, i.parity);
+    if (i.parity == NA) {
+      fill(color(200, 200, 200));
+    } else if (i.parity == OVER) {
+      fill(color(255, 0, 0));
+    } else if (i.parity == UNDER) {
+      fill(color(0, 255, 0));
+    } else {
+      fill(color(0, 150, 150));
+    }
+    circle(i.p.x, i.p.y, 5);
   }
 }
 
