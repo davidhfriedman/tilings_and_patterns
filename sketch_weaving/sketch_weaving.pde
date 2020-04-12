@@ -1,3 +1,30 @@
+// "parity" - where lines cross, over, under, or not yet determined
+
+final int NA = 0;
+final int OVER = 1;
+final int UNDER = 2;
+
+// numeric utilities
+
+// epsilon 
+float EPS = 0.000001;
+
+boolean isInf(float in) {
+  return in == Float.POSITIVE_INFINITY;
+}
+
+boolean isNegInf(float in) {
+  return in == Float.NEGATIVE_INFINITY;
+}
+
+boolean feq(float f, float g) {
+  return (isInf(f) && isInf(g)) || (isNegInf(f) && isNegInf(g)) || (abs(f-g) < EPS);
+}
+
+boolean veq (PVector a, PVector b) {
+  return feq(a.x, b.x) && feq(a.y, b.y);
+}
+
 class Segment {
   Segment(PVector _a, PVector _b) {
     a = _a;
@@ -30,9 +57,7 @@ void displaySegments() {
 ArrayList<Segment> segments = new ArrayList<Segment>();
 int sX, sY, eX, eY;
 
-final int NA = 0;
-final int OVER = 1;
-final int UNDER = 2;
+
 
 class Intersection {
   PVector p;
@@ -65,11 +90,6 @@ void clear() {
   rect(10,10,80,50);
 }
 
-float EPS = 0.000001;
-
-boolean feq(float f, float g) {
-  return abs(f-g) < EPS;
-}
 
 class MaybePVector {
   boolean onsegs;
@@ -125,6 +145,16 @@ MaybePVector intersect(Segment s1, Segment s2) {
   } else {
     float x = (b2 - b1)/(m1 - m2);
     float y = m1 * x + b1;
+    if (isInf(abs(m1)) && !isInf(abs(m2))) {
+      // s1 is vertical
+      x = s1.a.x;
+      y = m2 * x + b2;
+    } else if (!isInf(abs(m1)) && isInf(abs(m2))) {
+      // s2 is vertical
+      x = s2.a.x;
+      y = m1 * x + b1;
+    } 
+    println("Intersect: m1, m2 ", m1, m2, "; x, y ", x, y);
     // make sure it is on the segments
     boolean onsegs = inRange(s1.a.x, s1.b.x, x)
                   && inRange(s1.a.y, s1.b.y, y)
@@ -140,11 +170,9 @@ void addIntersectionToSegments(Segment s1, Segment s2, int i) {
   s2.intersections.append(i);
 }
 
-boolean veq (PVector a, PVector b) {
-  return feq(a.x, b.x) && feq(a.y, b.y);
-}
 
-void weave() {
+
+void find_all_intersections() {
   intersections = new ArrayList<Intersection>();
   for(Segment s: segments) {
     s.intersections = new IntList();
@@ -163,6 +191,17 @@ void weave() {
       }
     }
   }
+  
+  // sort the intersections on each segment by increasinging x (or y if vertical)
+  
+  for(Segment s: segments) {
+    
+  }
+}
+  
+  
+void weave() {
+  find_all_intersections();
   
   // put all the Segments with any intersections on a list
   IntList segmentsToDo = new IntList();
