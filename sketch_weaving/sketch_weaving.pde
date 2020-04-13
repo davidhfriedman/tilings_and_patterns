@@ -6,8 +6,8 @@ final int UNDER = 2;
 
 // numeric utilities
 
-// epsilon 
-float EPS = 0.000001;
+// for floating-point equality
+float EPSilon = 0.000001;
 
 boolean isInf(float in) {
   return in == Float.POSITIVE_INFINITY;
@@ -18,18 +18,60 @@ boolean isNegInf(float in) {
 }
 
 boolean feq(float f, float g) {
-  return (isInf(f) && isInf(g)) || (isNegInf(f) && isNegInf(g)) || (abs(f-g) < EPS);
+  return (isInf(f) && isInf(g)) || (isNegInf(f) && isNegInf(g)) || (abs(f-g) < EPSILON);
 }
 
 boolean veq (PVector a, PVector b) {
   return feq(a.x, b.x) && feq(a.y, b.y);
 }
 
+class Intersection {
+  PVector p;
+  int parity;
+  int s1, s2;
+  Intersection(PVector _p, int _parity, int _s1, int _s2) {
+    p = _p;
+    parity = _parity;
+    s1 = _s1;
+    s2 = _s2;
+  }
+}
+
+ArrayList<Intersection> gIntersections = new ArrayList<Intersection>();
+
+import java.util.Collections;
+import java.util.Comparator;
+
+class SortIntersectionsByY implements Comparator<Integer> {
+  @Override
+  public int compare(Integer a, Integer b) {
+    float f = gIntersections.get(a).p.y - gIntersections.get(b).p.y;
+    if (f < 0) return -1;
+    else if (f > 0) return 1;
+    else return 0;
+  }
+}
+
+class SortIntersectionsByX implements Comparator<Integer> {
+  @Override
+  public int compare(Integer a, Integer b) {
+    float f = gIntersections.get(a).p.x - gIntersections.get(b).p.x;
+    if (f < 0) return -1;
+    else if (f > 0) return 1;
+    else return 0;
+  }
+}
+
+Comparator<Integer> sortIntersectionsByX = new SortIntersectionsByX();
+Comparator<Integer> sortIntersectionsByY = new SortIntersectionsByY();
+
 class Segment {
   Segment(PVector _a, PVector _b) {
     a = _a;
     b = _b;
-    intersections = new IntList();
+    m = (b.y - a.y) / (b.x - a.x);
+    yInt = a.y - m * a.x;
+    intersections = new ArrayList<Integer>();
   }
   void display() {
     stroke(0);
@@ -44,7 +86,9 @@ class Segment {
   }
   PVector a;
   PVector b;
-  IntList intersections;
+  float m;
+  float yInt;
+  ArrayList<Integer> intersections;
 };
 
 void displaySegments() {
@@ -59,19 +103,6 @@ int sX, sY, eX, eY;
 
 
 
-class Intersection {
-  PVector p;
-  int parity;
-  int s1, s2;
-  Intersection(PVector _p, int _parity, int _s1, int _s2) {
-    p = _p;
-    parity = _parity;
-    s1 = _s1;
-    s2 = _s2;
-  }
-}
-
-ArrayList<Intersection> intersections = new ArrayList<Intersection>();
 
 void setup() {
   size(640, 360);
@@ -113,48 +144,21 @@ boolean inRange(float a, float b, float x) {
 }
 
 MaybePVector intersect(Segment s1, Segment s2) {
-  /*
-  y = m1x + b1
-  y = m2x + b2
-  
-  if m1 = m2 and b1 = b2 the lines are identical
-  if m1 = m2 and b1 != b2 the lines are parallel
-  otherwise, the lines intersect at (x,y):
-  
-  m1x + b1 = m2x + b2
-  (m1-m2)x = b2 - b1
-  x = (b2 - b1)/(m1 - m2)
-  y = m1[(b2 - b1)/(m1 - m2)] + b1
-  
-  y = mx + b
-  m = (y1-y0)/(x1-x0)
-  b = y0 - mx0
-  
-           /|(x1,y1)
-          / |
-         /  |
-  (x0,y0)----
-  */
-  
-  float m1 = (s1.b.y - s1.a.y) / (s1.b.x - s1.a.x);
-  float b1 = s1.a.y - m1 * s1.a.x;
-  float m2 = (s2.b.y - s2.a.y) / (s2.b.x - s2.a.x);
-  float b2 = s2.a.y - m2 * s2.a.x;
-  if (feq(m1, m2)) {
+  if (feq(s1.m, s2.m)) {
     return new MaybePVector(false, null, false);
   } else {
-    float x = (b2 - b1)/(m1 - m2);
-    float y = m1 * x + b1;
-    if (isInf(abs(m1)) && !isInf(abs(m2))) {
+    float x = (s2.yInt - s1.yInt)/(s1.m - s2.m);
+    float y = s1.m * x + s1.yInt;
+    if (isInf(abs(s1.m)) && !isInf(abs(s2.m))) {
       // s1 is vertical
       x = s1.a.x;
-      y = m2 * x + b2;
-    } else if (!isInf(abs(m1)) && isInf(abs(m2))) {
+      y = s2.m * x + s2.yInt;
+    } else if (!isInf(abs(s1.m)) && isInf(abs(s2.m))) {
       // s2 is vertical
       x = s2.a.x;
-      y = m1 * x + b1;
+      y = s1.m * x + s1.yInt;
     } 
-    println("Intersect: m1, m2 ", m1, m2, "; x, y ", x, y);
+    println("Intersect: m1, m2 ", s1.m, s2.m, "; x, y ", x, y);
     // make sure it is on the segments
     boolean onsegs = inRange(s1.a.x, s1.b.x, x)
                   && inRange(s1.a.y, s1.b.y, y)
@@ -166,16 +170,16 @@ MaybePVector intersect(Segment s1, Segment s2) {
 }
 
 void addIntersectionToSegments(Segment s1, Segment s2, int i) {
-  s1.intersections.append(i);
-  s2.intersections.append(i);
+  s1.intersections.add(Integer.valueOf(i));
+  s2.intersections.add(Integer.valueOf(i));
 }
 
 
 
 void find_all_intersections() {
-  intersections = new ArrayList<Intersection>();
+  gIntersections = new ArrayList<Intersection>();
   for(Segment s: segments) {
-    s.intersections = new IntList();
+    s.intersections = new ArrayList<Integer>();
   }
     
   for(int i = 0; i < segments.size(); i++) {
@@ -185,8 +189,8 @@ void find_all_intersections() {
       MaybePVector mp = intersect(s1, s2);
       if (mp.just && mp.onsegs) {
         println("Adding intersection", mp.p.x, mp.p.y);
-        intersections.add(new Intersection(mp.p, NA, i, j));
-        int I = intersections.size()-1;
+        gIntersections.add(new Intersection(mp.p, NA, i, j));
+        int I = gIntersections.size()-1;
         addIntersectionToSegments(s1, s2, I);
       }
     }
@@ -195,7 +199,14 @@ void find_all_intersections() {
   // sort the intersections on each segment by increasinging x (or y if vertical)
   
   for(Segment s: segments) {
-    
+    if (isInf(abs(s.m))) {
+      //println("before by Y:", s.m, s.intersections);
+      Collections.sort(s.intersections, sortIntersectionsByY);
+    } else {
+      //println("before by X:", s.m, s.intersections);
+      Collections.sort(s.intersections, sortIntersectionsByX);
+    }
+    //println("after:", s.intersections);
   }
 }
   
@@ -235,7 +246,8 @@ void weave() {
   }
   */
   
-  for(Intersection i: intersections) {
+  for(int k = 0; k < gIntersections.size(); k++) { 
+    Intersection i = gIntersections.get(k);
     println(i, i.p.x, i.p.y, i.parity);
     if (i.parity == NA) {
       fill(color(200, 200, 200));
@@ -247,6 +259,8 @@ void weave() {
       fill(color(0, 150, 150));
     }
     circle(i.p.x, i.p.y, 5);
+    fill(0);
+    text(nf(k), i.p.x+10, i.p.y+10);
   }
 }
 
