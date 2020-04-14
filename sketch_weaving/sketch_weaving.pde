@@ -1,8 +1,13 @@
 // "parity" - where lines cross, over, under, or not yet determined
 
-final int NA = 0;
-final int OVER = 1;
-final int UNDER = 2;
+public enum Parity {
+  NA, OVER, UNDER
+};
+
+Parity toggle(Parity p) {
+  if (p == Parity.NA) { return p; }
+  else { return p == Parity.OVER ? Parity.UNDER : Parity.OVER; }
+}
 
 // numeric utilities
 
@@ -25,47 +30,49 @@ boolean veq (PVector a, PVector b) {
   return feq(a.x, b.x) && feq(a.y, b.y);
 }
 
+int nextIntersectionLabel = 0;
+
 class Intersection {
   PVector p;
-  int parity;
-  int s1, s2;
-  Intersection(PVector _p, int _parity, int _s1, int _s2) {
+  Parity parity;
+  Segment s1, s2;
+  String label;
+  Intersection(PVector _p, Parity _parity, Segment _s1, Segment _s2) {
     p = _p;
     parity = _parity;
     s1 = _s1;
     s2 = _s2;
+    label = nf(nextIntersectionLabel++);
   }
 }
-
-ArrayList<Intersection> gIntersections = new ArrayList<Intersection>();
 
 import java.util.Collections;
 import java.util.Comparator;
 
-class SortIntersectionsByY implements Comparator<Integer> {
+class SortIntersectionsByY implements Comparator<Intersection> {
   @Override
-  public int compare(Integer a, Integer b) {
-    float f = gIntersections.get(a).p.y - gIntersections.get(b).p.y;
+  public int compare(Intersection a, Intersection b) {
+    float f = a.p.y - b.p.y;
     if (f < 0) return -1;
     else if (f > 0) return 1;
     else return 0;
   }
 }
 
-class SortIntersectionsByX implements Comparator<Integer> {
+class SortIntersectionsByX implements Comparator<Intersection> {
   @Override
-  public int compare(Integer a, Integer b) {
-    float f = gIntersections.get(a).p.x - gIntersections.get(b).p.x;
+  public int compare(Intersection a, Intersection b) {
+    float f = a.p.x - b.p.x;
     if (f < 0) return -1;
     else if (f > 0) return 1;
     else return 0;
   }
 }
 
-Comparator<Integer> sortIntersectionsByX = new SortIntersectionsByX();
-Comparator<Integer> sortIntersectionsByY = new SortIntersectionsByY();
+Comparator<Intersection> sortIntersectionsByX = new SortIntersectionsByX();
+Comparator<Intersection> sortIntersectionsByY = new SortIntersectionsByY();
 
-char nextSegmentName = 'a';
+char nextSegmentLabel = 'a';
 
 class Segment {
   Segment(PVector _a, PVector _b) {
@@ -73,17 +80,17 @@ class Segment {
     b = _b;
     m = (b.y - a.y) / (b.x - a.x);
     yInt = a.y - m * a.x;
-    intersections = new ArrayList<Integer>();
+    intersections = new ArrayList<Intersection>();
     visited = false;
-    name = nextSegmentName;
-    nextSegmentName++;
+    label = nextSegmentLabel;
+    nextSegmentLabel++;
   }
   void display() {
     stroke(0);
     strokeWeight(1);
     noFill();
     line(a.x, a.y, b.x, b.y);
-    text(name, a.x-10, a.y+10);
+    text(label, a.x-10, a.y+10);
   }
   String toString() {
     String s = "<Segment (" + a.x + "," + a.y +") (" + b.x + "," + b.y +") [" + intersections + "]";
@@ -94,14 +101,15 @@ class Segment {
   PVector b;
   float m;
   float yInt;
-  ArrayList<Integer> intersections;
+  ArrayList<Intersection> intersections;
   boolean visited;
-  char name;
+  char label;
 };
 
 void displaySegments() {
   clear();
   for (Segment seg : segments) {
+    println("display ", seg.label);
     seg.display();
   }
 }
@@ -177,17 +185,18 @@ MaybePVector intersect(Segment s1, Segment s2) {
   }
 }
 
-void addIntersectionToSegments(Segment s1, Segment s2, int i) {
-  s1.intersections.add(Integer.valueOf(i));
+/*
+void addIntersectionToSegments(Segment s1, Segment s2, Intersection i) {
+  s1.intersections.add(i);
   s2.intersections.add(Integer.valueOf(i));
 }
-
+*/
 
 
 void find_all_intersections() {
-  gIntersections = new ArrayList<Intersection>();
+  //gIntersections = new ArrayList<Intersection>();
   for(Segment s: segments) {
-    s.intersections = new ArrayList<Integer>();
+    s.intersections = new ArrayList<Intersection>();
   }
     
   for(int i = 0; i < segments.size(); i++) {
@@ -197,9 +206,8 @@ void find_all_intersections() {
       MaybePVector mp = intersect(s1, s2);
       if (mp.just && mp.onsegs) {
         //println("Adding intersection", mp.p.x, mp.p.y);
-        gIntersections.add(new Intersection(mp.p, NA, i, j));
-        int I = gIntersections.size()-1;
-        addIntersectionToSegments(s1, s2, I);
+        s1.intersections.add(new Intersection(mp.p, Parity.NA, s1, s2));
+        s2.intersections.add(new Intersection(mp.p, Parity.NA, s2, s1));
       }
     }
   }
@@ -219,147 +227,91 @@ void find_all_intersections() {
 }
   
 class Unit {
-  int s;
+  Segment s;
   int i;
-  int p;
-  Unit(int _s, int _i, int _p) {
+  Parity p;
+  Unit(Segment _s, int _i, Parity _p) {
     s = _s;
     i = _i;
     p = _p;
   }
 }
 
-ArrayList<Unit> stack;
+Stack stack;
+Parity p;
 
-boolean mark(int s, int i, int p) {
-  /* mark the ith intersection on segment s with parity p */
-  Segment segment = segments.get(s);
-  int intersectionIndex = segment.intersections.get(i);
-  Intersection intersection = gIntersections.get(intersectionIndex); 
-  if (intersection.parity == NA) {
-    println("mark ", s, "(", segment.name, ")", i, "(", intersectionIndex, ")", p);
+boolean mark(Segment segment, int i, Parity p) {
+  println("mark \"", segment.label, "\"", i, "\"", segment.intersections.get(i).label, "\"", p);
+  Intersection intersection = segment.intersections.get(i);
+  Segment otherSegment = intersection.s2;
+  if (intersection.parity == Parity.NA) {
+    println("  NA, marking", p, "...");
     intersection.parity = p;
-    int other = intersection.s1 == s ? intersection.s2 : intersection.s1;
-    Segment otherSegment = segments.get(other);
     for(int k = 0; k < otherSegment.intersections.size(); k++) {
-      if (otherSegment.intersections.get(k) == intersectionIndex) {
-        //int pp = ((p == OVER) ? UNDER : OVER);
-        stack.add(new Unit(other, k, p));
-        println("mark push", other, otherSegment.name, ")", k, "(", intersectionIndex, ")", p);
-        break;
+      if (otherSegment.intersections.get(k).s2 == segment) {
+        print("  found other segment \"", otherSegment.label);
+        print(k, "\"", otherSegment.intersections.get(k).label, "\"");
+        println(otherSegment.intersections.get(k).parity);  
+        if (otherSegment.intersections.get(k).parity == Parity.NA) {
+          stack.push(otherSegment, k, toggle(p));
+          break;
+        } else {
+          println("  already marked, skipping  ");
+        }
       }
     }
     return true;
   } else if (intersection.parity == p) {
+    println("  already marked ", p, "returning true... ");
     return true;
   } else {
-    println("MARK ERROR - inconsistency ", s, "(", segment.name, ")", i, "(", intersectionIndex, ")", p);
+    println("  inconsistency: want to mark ", p, " already marked ", intersection.parity);
     return false;
   }
 }
 
-int time;
 
-void weave() {
-  println("weave.");
-  time = millis();
-  find_all_intersections();
-  println("after find all intersections:", millis()-time);
-  time = millis();
-  for(Segment s: segments) {
-    s.visited = false;
+class Stack {
+  ArrayList<Unit> s;
+  Stack() {
+    s = new ArrayList<Unit>();
   }
-  /*
-  // put all the Segments with any intersections on a list
-  IntList segmentsToDo = new IntList();
-  for(int i = 0; i < segments.size(); i++) {
-    //print(segments.get(i));
-    if (segments.get(i).intersections.size() > 0) {
-      segmentsToDo.append(i);
-      //println(" - ADDING");
-    } else {
-      //println(" - Skipping");
-    }
+  void push(Segment seg, int i, Parity p) {
+    println("PUSH segment \"", seg.label, "\" intersection ", i, "\"", seg.intersections.get(i).label, "\"", p);
+    s.add(new Unit(seg, i, p));
   }
-  
-  println("segments: ", segments);
-  println("segments to do: ", segmentsToDo);
-  for(int i = 0; i < segmentsToDo.size(); i++) {
-    stroke(80);
-    strokeWeight(3);
-    line(segments.get(i).a.x, segments.get(i).a.y, segments.get(i).b.x, segments.get(i).b.y);
+  Unit pop() {
+    Unit u = s.remove(s.size()-1);
+    println("POP segment \"", u.s.label, "\" intersection ", u.i, "\"", u.s.intersections.get(u.i).label, "\"", u.p);
+    return u;
   }
-  */
-  
-  /*
-    parity <- OVER
-    choose an intersection i
-    for each segment s on i, push (s,i) on stack
-    while (stack not empty) {
-      (s,i, parity) <- pop stack
-      mark i with parity
-      toggle parity
-      save parity
-      for each intersection k to right of i on s
-        if k unmarked
-         mark k with parity
-         for each segment s' other than s on k, push (s', k, parity) on stack
-         toggle parity
-        else if k marked with parity
-         continue
-        else
-         ERROR - inconsistency
-      restore parity
-      for each intersection k to the left of i on s
-        if k unmarked
-         mark k with parity
-         for each segment s' other than s on k, push (s', k, parity) on stack
-         toggle parity
-        else if k marked with parity
-         continue
-        else
-         ERROR - inconsistency
-      mark s visited
-    }
-    optional check: if any segments with intersections are unvisitied, raise an ERROR
-  */  
-  
-  stack = new ArrayList<Unit>();
-  int p = OVER;
-  int seg = -1;
-  for(int i = 0; i < segments.size(); i++) {
-    if (segments.get(i).intersections.size() > 0) {
-      seg = i;
-      break;
-    }
+  boolean empty() {
+    return s.size() == 0;
   }
-  if (seg == -1) { // no intersections
-    return;
-  }
- 
-  stack.add(new Unit(seg, 0, p));
-  while (stack.size() > 0) {
-      Unit u = stack.remove(stack.size()-1);
-      int s = u.s;
-      int i = u.i;
-      println("stack step:", millis()-time, segments.get(u.s).name, i);
-      time = millis();
+}
 
-      p = u.p;
-      if (mark(s, i, p)) {
-        p = ((p == OVER) ? UNDER : OVER);
-        int savedParity = p;
-        for(int k = i+1; k < segments.get(s).intersections.size(); k++) {
-          if (mark(s, k, p)) {
-            p = ((p == OVER) ? UNDER : OVER);
+void flood() {
+
+  println("flood.");
+
+  while (!stack.empty()) {
+    Unit u = stack.pop();
+    Segment s = u.s;
+    p = u.p;
+    if (mark(s, u.i, p)) {
+      p = toggle(p);
+      Parity savedParity = p;
+      for(int k = u.i+1; k < s.intersections.size(); k++) {
+        if (mark(s, k, p)) {
+          p = toggle(p);
           } else {
             break;
           }
         }
         p = savedParity;
-        for(int k = 0; k < i; k++) {
+        for(int k = u.i-1; k >= 0; k--) {
           if (mark(s, k, p)) {
-            p = ((p == OVER) ? UNDER : OVER);
+            p = toggle(p);
           } else {
             break;
           }
@@ -367,44 +319,77 @@ void weave() {
       } else {
         break;
       }
-      segments.get(s).visited = true;
+      s.visited = true;
   }
-  //optional check: if any segments with intersections are unvisitied, raise an ERROR
+}
+
+void weave() {
   
-  /*
-  int parity = OVER;
-  while (segmentsToDo.size() > 0) {
-    int s = segmentsToDo.remove(segmentsToDo.size()-1);
-    for(int i = 0; i < segments.get(s).intersections.size(); i++) {
-      int p = gIntersections.get(segments.get(s).intersections.get(i)).parity;
-      if (p == NA) {
-        gIntersections.get(segments.get(s).intersections.get(i)).parity = parity;
-        println("Assign", s, i, parity);
-        parity = ((parity == OVER) ? UNDER : OVER);
-      } else if (p != parity) {
-        println("ERROR: ", s, i, p, parity);
-      } else {
-        println("Already set, skipping", s, i);
+  println("weave.");
+  
+  find_all_intersections();
+  
+  for(Segment s: segments) {
+    s.visited = false;
+  }
+  
+  stack = new Stack();
+  p = Parity.OVER;
+  
+  while (true) {
+    // any disconnected regions not yet visited?
+    int seg = -1;
+    for(int i = 0; i < segments.size(); i++) {
+      if (segments.get(i).intersections.size() > 0 && !segments.get(i).visited) {
+        seg = i;
+        break;
       }
     }
-    break;
-  }
-  */
-  
-  for(int k = 0; k < gIntersections.size(); k++) { 
-    Intersection i = gIntersections.get(k);
-    if (i.parity == NA) {
-      fill(color(200, 200, 200));
-    } else if (i.parity == OVER) {
-      fill(color(255, 0, 0));
-    } else if (i.parity == UNDER) {
-      fill(color(0, 255, 0));
-    } else {
-      fill(color(0, 150, 150));
+    if (seg == -1) {
+      // none left, done
+      break;
     }
-    circle(i.p.x, i.p.y, 5);
-    fill(0);
-    text(nf(k), i.p.x+10, i.p.y+10);
+    stack.push(segments.get(seg), 0, p);
+    flood();
+  }  
+  
+  for(Segment s: segments) { 
+    for(Intersection i: s.intersections) {
+      switch (i.parity) {
+      case NA: {
+        println("NA: ", s.label, i.label);
+        fill(color(200, 200, 200));
+        circle(i.p.x, i.p.y, 5);
+        //fill(0);
+        text(i.label, i.p.x+10, i.p.y+10);
+        break;
+      }
+      case OVER: {
+        println("OVER: ", s.label, i.label);
+        fill(color(255, 0, 0));
+        circle(i.p.x, i.p.y, 5);
+        //fill(0);
+        text(i.label, i.p.x+10, i.p.y+10);
+        break;
+      }
+      case UNDER: {
+        println("UNDER: ", s.label, i.label);
+        fill(color(0, 255, 0));
+        circle(i.p.x+3, i.p.y+3, 5);
+        //fill(0);
+        text(i.label, i.p.x+10, i.p.y+25);
+        break;
+      }
+      default: {
+        println("ERROR: ", s.label, i.label);
+        fill(color(0, 150, 150));
+        circle(i.p.x, i.p.y, 8);
+        fill(0);
+        text(i.label, i.p.x+10, i.p.y+10);
+        break;
+      }
+      }
+    }
   }
 }
 
