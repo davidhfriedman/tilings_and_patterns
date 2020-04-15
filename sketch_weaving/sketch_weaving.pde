@@ -9,6 +9,10 @@ Parity toggle(Parity p) {
   else { return p == Parity.OVER ? Parity.UNDER : Parity.OVER; }
 }
 
+// width of ribbon
+
+final float R = 10.0;
+
 // numeric utilities
 
 // for floating-point equality
@@ -109,7 +113,7 @@ class Segment {
 void displaySegments() {
   clear();
   for (Segment seg : segments) {
-    println("display ", seg.label);
+    //println("display ", seg.label);
     seg.display();
   }
 }
@@ -241,31 +245,31 @@ Stack stack;
 Parity p;
 
 boolean mark(Segment segment, int i, Parity p) {
-  println("mark \"", segment.label, "\"", i, "\"", segment.intersections.get(i).label, "\"", p);
+  //println("mark \"", segment.label, "\"", i, "\"", segment.intersections.get(i).label, "\"", p);
   Intersection intersection = segment.intersections.get(i);
   Segment otherSegment = intersection.s2;
   if (intersection.parity == Parity.NA) {
-    println("  NA, marking", p, "...");
+    //println("  NA, marking", p, "...");
     intersection.parity = p;
     for(int k = 0; k < otherSegment.intersections.size(); k++) {
       if (otherSegment.intersections.get(k).s2 == segment) {
-        print("  found other segment \"", otherSegment.label);
-        print(k, "\"", otherSegment.intersections.get(k).label, "\"");
-        println(otherSegment.intersections.get(k).parity);  
+        //print("  found other segment \"", otherSegment.label);
+        //print(k, "\"", otherSegment.intersections.get(k).label, "\"");
+        //println(otherSegment.intersections.get(k).parity);  
         if (otherSegment.intersections.get(k).parity == Parity.NA) {
           stack.push(otherSegment, k, toggle(p));
           break;
         } else {
-          println("  already marked, skipping  ");
+          //println("  already marked, skipping  ");
         }
       }
     }
     return true;
   } else if (intersection.parity == p) {
-    println("  already marked ", p, "returning true... ");
+    //println("  already marked ", p, "returning true... ");
     return true;
   } else {
-    println("  inconsistency: want to mark ", p, " already marked ", intersection.parity);
+    //println("  inconsistency: want to mark ", p, " already marked ", intersection.parity);
     return false;
   }
 }
@@ -277,12 +281,12 @@ class Stack {
     s = new ArrayList<Unit>();
   }
   void push(Segment seg, int i, Parity p) {
-    println("PUSH segment \"", seg.label, "\" intersection ", i, "\"", seg.intersections.get(i).label, "\"", p);
+    //println("PUSH segment \"", seg.label, "\" intersection ", i, "\"", seg.intersections.get(i).label, "\"", p);
     s.add(new Unit(seg, i, p));
   }
   Unit pop() {
     Unit u = s.remove(s.size()-1);
-    println("POP segment \"", u.s.label, "\" intersection ", u.i, "\"", u.s.intersections.get(u.i).label, "\"", u.p);
+    //println("POP segment \"", u.s.label, "\" intersection ", u.i, "\"", u.s.intersections.get(u.i).label, "\"", u.p);
     return u;
   }
   boolean empty() {
@@ -353,41 +357,68 @@ void weave() {
     flood();
   }  
   
-  for(Segment s: segments) { 
+  render();
+}
+
+void Line(float ax, float ay, float bx, float by, float m, float r) {
+  stroke(0);
+  strokeWeight(1);
+  if (isInf(abs(m))) {
+    float R = r/2;
+    line(ax + R, ay, bx + R, by);
+    line(ax - R, ay, bx - R, by);
+  } else if (feq(m, 0)) {
+    float R = r/2;
+    line(ax, ay - R, bx, by - R);
+    line(ax, ay + R, bx, by + R);
+  } else {
+    float dx =  (r/2) / sqrt(1 + 1/(m*m));
+    float dy = (-1/m) * dx;
+    //println("width:", r, "slope:", m, "dx:", dx, "dy:", dy);
+    line(ax, ay, bx, by);
+    line(ax + dx, ay + dy, bx + dx, by + dy);
+    line(ax - dx, ay - dy, bx - dx, by - dy);
+  }
+}
+
+void render() {
+  clear();
+  for(Segment s: segments) {
+    Line(s.a.x, s.a.y, s.b.x, s.b.y, s.m, R);
     for(Intersection i: s.intersections) {
       switch (i.parity) {
-      case NA: {
-        println("NA: ", s.label, i.label);
-        fill(color(200, 200, 200));
-        circle(i.p.x, i.p.y, 5);
-        //fill(0);
-        text(i.label, i.p.x+10, i.p.y+10);
-        break;
-      }
-      case OVER: {
-        println("OVER: ", s.label, i.label);
-        fill(color(255, 0, 0));
-        circle(i.p.x, i.p.y, 5);
-        //fill(0);
-        text(i.label, i.p.x+10, i.p.y+10);
-        break;
-      }
-      case UNDER: {
-        println("UNDER: ", s.label, i.label);
-        fill(color(0, 255, 0));
-        circle(i.p.x+3, i.p.y+3, 5);
-        //fill(0);
-        text(i.label, i.p.x+10, i.p.y+25);
-        break;
-      }
-      default: {
-        println("ERROR: ", s.label, i.label);
-        fill(color(0, 150, 150));
-        circle(i.p.x, i.p.y, 8);
-        fill(0);
-        text(i.label, i.p.x+10, i.p.y+10);
-        break;
-      }
+        case NA: {
+          //println("NA: ", s.label, i.label);
+          fill(color(200, 200, 200));
+          circle(i.p.x, i.p.y, 5);
+          //fill(0);
+          text(i.label, i.p.x+10, i.p.y+10);
+          break;
+        }
+        case OVER: {
+          //println("OVER: ", s.label, i.label);
+          fill(color(255, 0, 0));
+          circle(i.p.x, i.p.y, 5);
+          //fill(0);
+          text(i.label, i.p.x+10, i.p.y+10);
+          break;
+        }
+        case UNDER: {
+          //println("UNDER: ", s.label, i.label);
+          fill(color(0, 255, 0));
+          circle(i.p.x+3, i.p.y+3, 5);
+          //fill(0);
+          text(i.label, i.p.x+10, i.p.y+25);
+          break;
+        }
+        default: {
+          println("ERROR: ", s.label, i.label);
+          fill(color(0, 150, 150));
+          circle(i.p.x, i.p.y, 8);
+          fill(0);
+          text(i.label, i.p.x+10, i.p.y+10);
+          break;
+        }
       }
     }
   }
